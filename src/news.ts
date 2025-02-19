@@ -12,15 +12,28 @@ export async function getOmuaikidoNews(request: Request) {
 	const today = new Date();
 	today.setHours(0, 0, 0, 0);
 
+	const isLong = new URL(request.url).searchParams.get('long') === 'true';
+
 	const newsletters = await fetchSheet(id, gid).then(sheetToJSON);
 	const filteredNewsletters = newsletters.filter((entry: any) => {
-		// ターゲットが omu-aikido.com かつ掲載期間内(startが今日以前かつendが今日以降)を確認
-		return entry.target === 'omu-aikido.com' && entry.startDate <= today && entry.endDate >= today;
+		// ターゲットの確認
+		const targetMatch = entry.target === 'omu-aikido.com';
+		// 開始日の確認（今日以前に公開されたもの）
+		const isPublished = entry.startDate <= today;
+
+		if (isLong) {
+			// longモード: 公開済みの全てのコンテンツ
+			return targetMatch && isPublished;
+		} else {
+			// 通常モード: 公開済みで、まだ公開期間が終了していないもの
+			const isActive = entry.endDate >= today;
+			return targetMatch && isPublished && isActive;
+		}
 	});
 
 	return new Response(JSON.stringify(filteredNewsletters), {
 		headers: {
-			'Cache-Control': 'max-age=0, s-maxage=14400, stale-while-revalidate=3600',
+			'Cache-Control': 'max-age=0, s-maxage=7200, stale-while-revalidate=3600',
 			'content-type': 'application/json',
 			'Access-Control-Allow-Origin': 'https://omu-aikido.com',
 		},
@@ -35,15 +48,28 @@ export async function getAppNews(request: Request) {
 	const today = new Date();
 	today.setHours(0, 0, 0, 0);
 
+	const isLong = new URL(request.url).searchParams.get('long') === 'true';
+
 	const newsletters = await fetchSheet(id, gid).then(sheetToJSON);
 	const filteredNewsletters = newsletters.filter((entry: any) => {
-		// ターゲットが omu-aikido.com かつ掲載期間内(startが今日以前かつendが今日以降)を確認
-		return entry.target === 'app.omu-aikido.com' && entry.startDate <= today && entry.endDate >= today;
+		// ターゲットの確認
+		const targetMatch = entry.target === 'app.omu-aikido.com';
+		// 開始日の確認（今日以前に公開されたもの）
+		const isPublished = entry.startDate <= today;
+
+		if (isLong) {
+			// longモード: 公開済みの全てのコンテンツ
+			return targetMatch && isPublished;
+		} else {
+			// 通常モード: 公開済みで、まだ公開期間が終了していないもの
+			const isActive = entry.endDate >= today;
+			return targetMatch && isPublished && isActive;
+		}
 	});
 
 	return new Response(JSON.stringify(filteredNewsletters), {
 		headers: {
-			'Cache-Control': 'max-age=0, s-maxage=14400, stale-while-revalidate=3600',
+			'Cache-Control': 'max-age=0, s-maxage=7200, stale-while-revalidate=3600',
 			'content-type': 'application/json',
 			'Access-Control-Allow-Origin': 'https://app.omu-aikido.com',
 		},
