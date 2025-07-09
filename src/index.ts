@@ -1,8 +1,15 @@
 import { Hono } from 'hono';
 import { getOmuaikidoNews, getAppNews } from './news';
 import { getCalendarEvents } from './calendar';
+import { wbgt } from './wbgt';
+import { sendDiscord } from './discord';
 
-const app = new Hono();
+type Bindings = {
+	WBGT_KV_NAMESPACE: KVNamespace;
+	DISCORD_WEBHOOK_URL: string;
+};
+
+const app = new Hono<{ Bindings: Bindings }>();
 
 app.get('/news', async (c) => {
 	return getOmuaikidoNews(c.req.raw);
@@ -17,11 +24,14 @@ app.get('/calendar', async (c) => {
 });
 
 app.get('/wbgt', async (c) => {
-	return;
+	const kvData = await wbgt(c);
+	return c.json(kvData);
 });
 
-app.notFound((c) => {
-	return c.text('Not Found', 404);
-});
-
-export default app;
+// HonoアプリとScheduledイベントハンドラをエクスポート
+export default {
+	fetch: app.fetch,
+	async scheduled(event: ScheduledEvent, env: Bindings, ctx: ExecutionContext) {
+		ctx.waitUntil(sendDiscord(env));
+	},
+};

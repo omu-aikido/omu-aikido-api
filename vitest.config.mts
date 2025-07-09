@@ -8,5 +8,6 @@ export default defineWorkersConfig({
 			},
 		},
 		include: ['tests/**/*.test.ts'],
+		setupFiles: ['./vitest.setup.ts'],
 	},
 });
