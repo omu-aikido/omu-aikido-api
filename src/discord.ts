@@ -12,7 +12,14 @@ export async function sendDiscord(env: { DISCORD_WEBHOOK_URL: string; WBGT_KV_NA
 
 	const value15 = wbgt15 ? parseFloat(wbgt15) : null;
 	const value18 = wbgt18 ? parseFloat(wbgt18) : null;
-	const isHigh = (value15 && value15 >= 27) || (value18 && value18 >= 27);
+
+	const shouldAlert = () => {
+		if (!value18) return false;
+		if (value18 >= 28) return true;
+		return false;
+	};
+
+	const isHigh = shouldAlert();
 	const maxValue = Math.max(value15 || 0, value18 || 0);
 
 	console.log(`WBGT値: 15時=${value15}, 18時=${value18}, 最大値=${maxValue}`);
@@ -25,16 +32,16 @@ export async function sendDiscord(env: { DISCORD_WEBHOOK_URL: string; WBGT_KV_NA
 		return { level: '安全', color: 255 };
 	};
 
-	const { level, color } = getWbgtLevel(maxValue);
+	const { level, color } = getWbgtLevel(value18 || maxValue);
 	console.log(`WBGTレベル: ${level}, 色コード: ${color}`);
 
 	const requestBody = {
-		content: '⚠️ **WBGT警告** ⚠️',
+		content: '**WBGT予報**',
 		username: 'WBGT Bot',
 		embeds: [
 			{
 				title: `今日のWBGT予測`,
-				description: `15時: ${value15 ? value15 + '°C' : 'N/A'}\n18時: ${value18 ? value18 + '°C' : 'N/A'}\n\n${level}`,
+				description: `15時: ${value15 ? value15 + '°C' : 'N/A'}\n18時: ${value18 ? value18 + '°C' : 'N/A'}\n\n**${level}**`,
 				color,
 				timestamp: new Date().toISOString(),
 			},

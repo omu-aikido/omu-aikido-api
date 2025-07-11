@@ -36,12 +36,12 @@ export async function fetchWbgtData(params: string | null): Promise<WbgtEntry[]>
 		.slice(2)
 		.map((v) => v.trim());
 
-	const now = new Date();
-	const todayJST = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-	todayJST.setHours(todayJST.getHours() + 9);
-
-	const tomorrowJST = new Date(todayJST);
-	tomorrowJST.setDate(todayJST.getDate() + 1);
+	// UTC時刻をJSTに変換（UTC+9）
+	const nowUTC = new Date();
+	const nowJST = new Date(nowUTC.getTime() + 9 * 60 * 60 * 1000);
+	
+	const todayJST = new Date(nowJST.getFullYear(), nowJST.getMonth(), nowJST.getDate());
+	const tomorrowJST = new Date(todayJST.getTime() + 24 * 60 * 60 * 1000);
 
 	const targetTimes = [
 		{ date: todayJST, hour: 15 },
@@ -108,12 +108,12 @@ export async function wbgt(c: Context) {
 	const point = new URL(c.req.url).searchParams.get('point');
 	const env = c.env;
 
-	const now = new Date();
-	const todayJST = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-	todayJST.setHours(todayJST.getHours() + 9);
-
-	const tomorrowJST = new Date(todayJST);
-	tomorrowJST.setDate(todayJST.getDate() + 1);
+	// UTC時刻をJSTに変換（UTC+9）
+	const nowUTC = new Date();
+	const nowJST = new Date(nowUTC.getTime() + 9 * 60 * 60 * 1000);
+	
+	const todayJST = new Date(nowJST.getFullYear(), nowJST.getMonth(), nowJST.getDate());
+	const tomorrowJST = new Date(todayJST.getTime() + 24 * 60 * 60 * 1000);
 
 	const targetTimes = [
 		{ date: todayJST, hour: 15 },
