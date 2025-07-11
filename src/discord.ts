@@ -12,8 +12,10 @@ export async function sendDiscord(env: { DISCORD_WEBHOOK_URL: string; WBGT_KV_NA
 
 	const value15 = wbgt15 ? parseFloat(wbgt15) : null;
 	const value18 = wbgt18 ? parseFloat(wbgt18) : null;
-	const isHigh = (value15 && value15 >= 31) || (value18 && value18 >= 31);
+	const isHigh = (value15 && value15 >= 27) || (value18 && value18 >= 27);
 	const maxValue = Math.max(value15 || 0, value18 || 0);
+
+	console.log(`WBGT値: 15時=${value15}, 18時=${value18}, 最大値=${maxValue}`);
 
 	const getWbgtLevel = (value: number) => {
 		if (value >= 31) return { level: '危険', color: 15158332 };
@@ -24,23 +26,27 @@ export async function sendDiscord(env: { DISCORD_WEBHOOK_URL: string; WBGT_KV_NA
 	};
 
 	const { level, color } = getWbgtLevel(maxValue);
+	console.log(`WBGTレベル: ${level}, 色コード: ${color}`);
 
 	const requestBody = {
-		content: isHigh ? '⚠️ **WBGT警告** ⚠️' : '✅ 部活動安全確認',
+		content: '⚠️ **WBGT警告** ⚠️',
 		username: 'WBGT Bot',
 		embeds: [
 			{
-				title: '今日の部活動 - WBGT予測',
-				description: `15時: ${value15 ? value15 + '°C' : 'N/A'}\n18時: ${
-					value18 ? value18 + '°C' : 'N/A'
-				}\n\n**最高値: ${maxValue}°C (${level})**\n\n${
-					isHigh ? '⚠️ 熱中症の危険が高いため、活動の中止または十分な対策を検討してください。' : '✅ 現在の予測では安全な範囲内です。'
-				}`,
+				title: `今日のWBGT予測`,
+				description: `15時: ${value15 ? value15 + '°C' : 'N/A'}\n18時: ${value18 ? value18 + '°C' : 'N/A'}\n\n${level}`,
 				color,
 				timestamp: new Date().toISOString(),
 			},
 		],
 	};
+
+	console.log(requestBody);
+
+	if (!isHigh) {
+		console.log('WBGT値は高くありません。通知を送信しません。');
+		return;
+	}
 
 	try {
 		const response = await fetch(env.DISCORD_WEBHOOK_URL, {

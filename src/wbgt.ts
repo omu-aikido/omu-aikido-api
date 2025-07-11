@@ -44,10 +44,10 @@ export async function fetchWbgtData(params: string | null): Promise<WbgtEntry[]>
 	tomorrowJST.setDate(todayJST.getDate() + 1);
 
 	const targetTimes = [
-		{ label: 'TODAY', date: todayJST, hour: 15 },
-		{ label: 'TODAY', date: todayJST, hour: 18 },
-		{ label: 'TOMORROW', date: tomorrowJST, hour: 15 },
-		{ label: 'TOMORROW', date: tomorrowJST, hour: 18 },
+		{ date: todayJST, hour: 15 },
+		{ date: todayJST, hour: 18 },
+		{ date: tomorrowJST, hour: 15 },
+		{ date: tomorrowJST, hour: 18 },
 	];
 
 	const entries: WbgtEntry[] = [];
@@ -75,7 +75,7 @@ export async function fetchWbgtData(params: string | null): Promise<WbgtEntry[]>
 		}
 
 		if (wbgtValue !== null) {
-			const kvKey = `WBGT_${target.label}_${hour}`;
+			const kvKey = `WBGT_${year}${month}${day}_${hour}`;
 			entries.push({ key: kvKey, value: wbgtValue.toString() });
 		}
 	}
@@ -86,27 +86,16 @@ export async function saveWbgtDataToKV(entries: WbgtEntry[], env: { WBGT_KV: KVN
 	for (const entry of entries) {
 		const existingValue = await env.WBGT_KV.get(entry.key);
 		if (existingValue !== entry.value) {
-			await env.WBGT_KV.put(entry.key, entry.value, { expirationTtl: 3600 });
+			await env.WBGT_KV.put(entry.key, entry.value, { expirationTtl: 86400 });
 		}
 	}
 }
 export async function getWbgtDataFromKV(date: Date, hour: number, env: { WBGT_KV: KVNamespace }): Promise<string | null> {
+	const year = date.getFullYear();
+	const month = (date.getMonth() + 1).toString().padStart(2, '0');
+	const day = date.getDate().toString().padStart(2, '0');
 	const h = hour.toString().padStart(2, '0');
-	const today = new Date();
-	today.setHours(0, 0, 0, 0);
-	const tomorrow = new Date(today);
-	tomorrow.setDate(today.getDate() + 1);
-
-	let label: string;
-	if (date.toDateString() === today.toDateString()) {
-		label = 'TODAY';
-	} else if (date.toDateString() === tomorrow.toDateString()) {
-		label = 'TOMORROW';
-	} else {
-		// Fallback for other dates, though not expected for this use case
-		label = date.toDateString();
-	}
-	const kvKey = `WBGT_${label}_${h}`;
+	const kvKey = `WBGT_${year}${month}${day}_${h}`;
 	return env.WBGT_KV.get(kvKey);
 }
 
@@ -127,26 +116,21 @@ export async function wbgt(c: Context) {
 	tomorrowJST.setDate(todayJST.getDate() + 1);
 
 	const targetTimes = [
-		{ label: 'TODAY', date: todayJST, hour: 15 },
-		{ label: 'TODAY', date: todayJST, hour: 18 },
-		{ label: 'TOMORROW', date: tomorrowJST, hour: 15 },
-		{ label: 'TOMORROW', date: tomorrowJST, hour: 18 },
+		{ date: todayJST, hour: 15 },
+		{ date: todayJST, hour: 18 },
+		{ date: tomorrowJST, hour: 15 },
+		{ date: tomorrowJST, hour: 18 },
 	];
 
 	let shouldUpdateKV = false;
 	const kvData: { [key: string]: string | null } = {};
 
 	for (const target of targetTimes) {
+		const year = target.date.getFullYear();
+		const month = (target.date.getMonth() + 1).toString().padStart(2, '0');
+		const day = target.date.getDate().toString().padStart(2, '0');
 		const h = target.hour.toString().padStart(2, '0');
-		let label: string;
-		if (target.date.toDateString() === todayJST.toDateString()) {
-			label = 'TODAY';
-		} else if (target.date.toDateString() === tomorrowJST.toDateString()) {
-			label = 'TOMORROW';
-		} else {
-			label = target.date.toDateString();
-		}
-		const kvKey = `WBGT_${label}_${h}`;
+		const kvKey = `WBGT_${year}${month}${day}_${h}`;
 
 		const { value, metadata } = await env.WBGT_KV_NAMESPACE.getWithMetadata(kvKey, { type: 'text' });
 
@@ -159,16 +143,11 @@ export async function wbgt(c: Context) {
 	if (shouldUpdateKV) {
 		await saveWbgt(point, { WBGT_KV: env.WBGT_KV_NAMESPACE });
 		for (const target of targetTimes) {
+			const year = target.date.getFullYear();
+			const month = (target.date.getMonth() + 1).toString().padStart(2, '0');
+			const day = target.date.getDate().toString().padStart(2, '0');
 			const h = target.hour.toString().padStart(2, '0');
-			let label: string;
-			if (target.date.toDateString() === todayJST.toDateString()) {
-				label = 'TODAY';
-			} else if (target.date.toDateString() === tomorrowJST.toDateString()) {
-				label = 'TOMORROW';
-			} else {
-				label = target.date.toDateString();
-			}
-			const kvKey = `WBGT_${label}_${h}`;
+			const kvKey = `WBGT_${year}${month}${day}_${h}`;
 			kvData[kvKey] = await env.WBGT_KV_NAMESPACE.get(kvKey, { type: 'text' });
 		}
 	}
