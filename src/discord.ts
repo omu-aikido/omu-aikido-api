@@ -1,3 +1,7 @@
+import { getUpcomingPractices, hasNakamozu, getNakamozu } from './practice';
+import type { VEvent } from 'ts-ics';
+
+// 既存のsendDiscord関数（WBGT通知）
 export async function sendDiscord(env: { DISCORD_WEBHOOK_URL: string; WBGT_KV_NAMESPACE: KVNamespace }) {
 	// 5月から9月のみ実行
 	const now = new Date();
@@ -64,5 +68,69 @@ export async function sendDiscord(env: { DISCORD_WEBHOOK_URL: string; WBGT_KV_NA
 		console.log(`Discord通知送信: ${response.status}`);
 	} catch (error) {
 		console.error('Discord通知エラー:', error);
+	}
+}
+
+// 新しい中百舌鳥稽古通知関数
+export async function sendPracticeNotification(env: any): Promise<boolean> {
+	try {
+		const practices = await getUpcomingPractices();
+		if (!hasNakamozu(practices)) {
+			return false; // 通知しなかった
+		}
+
+		const nakamozuPractices = getNakamozu(practices);
+		console.log(`中百舌鳥稽古が${nakamozuPractices.length}件見つかりました`);
+
+		for (const event of nakamozuPractices) {
+			const startTime = new Date(event.start.date);
+			const endTime = event.end ? new Date(event.end.date) : null;
+
+			// 時間のフォーマット
+			const formatTime = (date: Date) => {
+				return date.toLocaleString('ja-JP', {
+					month: 'numeric',
+					day: 'numeric',
+					hour: '2-digit',
+					minute: '2-digit',
+					timeZone: 'Asia/Tokyo',
+				});
+			};
+
+			const timeText = endTime ? `${formatTime(startTime)} - ${formatTime(endTime)}` : formatTime(startTime);
+
+			const requestBody = {
+				content: '**稽古のお知らせ**',
+				username: '稽古通知Bot',
+				embeds: [
+					{
+						title: event.summary || '稽古',
+						description: `**開始時間**: ${timeText}\n**場所**: ${event.location || '中百舌鳥'}${
+							event.description ? `\n**詳細**: ${event.description}` : ''
+						}`,
+						color: 3447003, // 青色
+						timestamp: new Date().toISOString(),
+					},
+				],
+			};
+
+			console.log('送信する内容:', requestBody);
+
+			const response = await fetch(env.DISCORD_WEBHOOK_URL, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(requestBody),
+			});
+
+			if (response.ok) {
+				console.log(`稽古通知送信成功: ${response.status}`);
+			} else {
+				console.error(`稽古通知送信失敗: ${response.status} - ${response.statusText}`);
+			}
+		}
+		return true; // 通知が成功した
+	} catch (error) {
+		console.error('稽古通知エラー:', error);
+		return false;
 	}
 }

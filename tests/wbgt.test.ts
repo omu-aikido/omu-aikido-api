@@ -16,10 +16,10 @@ describe('fetchWbgtData', () => {
 		const entries = await fetchWbgtData('62091');
 
 		expect(entries).toEqual([
-			{ key: 'WBGT_TODAY_15', value: '30' },
-			{ key: 'WBGT_TODAY_18', value: '29' },
-			{ key: 'WBGT_TOMORROW_15', value: '29' },
-			{ key: 'WBGT_TOMORROW_18', value: '28' },
+			{ key: 'WBGT_20250709_15', value: '30' },
+			{ key: 'WBGT_20250709_18', value: '29' },
+			{ key: 'WBGT_20250710_15', value: '29' },
+			{ key: 'WBGT_20250710_18', value: '28' },
 		]);
 		expect(global.fetch).toHaveBeenCalledWith('https://www.wbgt.env.go.jp/prev15WG/dl/yohou_62091.csv');
 	});
@@ -48,31 +48,31 @@ describe('saveWbgtDataToKV', () => {
 			list: vi.fn(),
 		};
 		const entries = [
-			{ key: 'WBGT_TODAY_15', value: '30' },
-			{ key: 'WBGT_TODAY_18', value: '29' },
+			{ key: 'WBGT_20250709_15', value: '30' },
+			{ key: 'WBGT_20250709_18', value: '29' },
 		];
 
 		await saveWbgtDataToKV(entries, { WBGT_KV: mockKV as any });
 
 		expect(mockKV.put).toHaveBeenCalledTimes(2); // Should call put for both entries
-		expect(mockKV.put).toHaveBeenCalledWith('WBGT_TODAY_15', '30', { expirationTtl: 3600 });
-		expect(mockKV.put).toHaveBeenCalledWith('WBGT_TODAY_18', '29', { expirationTtl: 3600 });
+		expect(mockKV.put).toHaveBeenCalledWith('WBGT_20250709_15', '30', { expirationTtl: 86400 });
+		expect(mockKV.put).toHaveBeenCalledWith('WBGT_20250709_18', '29', { expirationTtl: 86400 });
 	});
 
 	it('should not save WBGT data to KV if value is the same', async () => {
 		const mockKV = {
 			put: vi.fn(),
 			get: vi.fn((key) => {
-				if (key === 'WBGT_TODAY_15') return Promise.resolve('30');
-				if (key === 'WBGT_TODAY_18') return Promise.resolve('29');
+				if (key === 'WBGT_20250709_15') return Promise.resolve('30');
+				if (key === 'WBGT_20250709_18') return Promise.resolve('29');
 				return Promise.resolve(null);
 			}),
 			delete: vi.fn(),
 			list: vi.fn(),
 		};
 		const entries = [
-			{ key: 'WBGT_TODAY_15', value: '30' },
-			{ key: 'WBGT_TODAY_18', value: '29' },
+			{ key: 'WBGT_20250709_15', value: '30' },
+			{ key: 'WBGT_20250709_18', value: '29' },
 		];
 
 		await saveWbgtDataToKV(entries, { WBGT_KV: mockKV as any });
@@ -102,55 +102,13 @@ describe('wbgt', () => {
 		await saveWbgt('62091', { WBGT_KV: mockKV as any });
 
 		// KV.putが正しい引数で呼び出されたことを確認
-		expect(mockKV.put).toHaveBeenCalledWith('WBGT_TODAY_15', '30', { expirationTtl: 3600 });
-		expect(mockKV.put).toHaveBeenCalledWith('WBGT_TODAY_18', '29', { expirationTtl: 3600 });
-		expect(mockKV.put).toHaveBeenCalledWith('WBGT_TOMORROW_15', '29', { expirationTtl: 3600 });
-		expect(mockKV.put).toHaveBeenCalledWith('WBGT_TOMORROW_18', '28', { expirationTtl: 3600 });
+		expect(mockKV.put).toHaveBeenCalledWith('WBGT_20250709_15', '30', { expirationTtl: 86400 });
+		expect(mockKV.put).toHaveBeenCalledWith('WBGT_20250709_18', '29', { expirationTtl: 86400 });
+		expect(mockKV.put).toHaveBeenCalledWith('WBGT_20250710_15', '29', { expirationTtl: 86400 });
+		expect(mockKV.put).toHaveBeenCalledWith('WBGT_20250710_18', '28', { expirationTtl: 86400 });
 
 		// fetchが正しいURLで呼び出されたことを確認
 		expect(global.fetch).toHaveBeenCalledWith('https://www.wbgt.env.go.jp/prev15WG/dl/yohou_62091.csv');
-	});
-});
-
-describe('saveWbgtDataToKV', () => {
-	it('should save WBGT data to KV if value differs', async () => {
-		const mockKV = {
-			put: vi.fn(),
-			get: vi.fn(() => Promise.resolve('old_value')), // Mock existing value
-			delete: vi.fn(),
-			list: vi.fn(),
-		};
-		const entries = [
-			{ key: 'WBGT_TODAY_15', value: '30' },
-			{ key: 'WBGT_TODAY_18', value: '29' },
-		];
-
-		await saveWbgtDataToKV(entries, { WBGT_KV: mockKV as any });
-
-		expect(mockKV.put).toHaveBeenCalledTimes(2); // Should call put for both entries
-		expect(mockKV.put).toHaveBeenCalledWith('WBGT_TODAY_15', '30', { expirationTtl: 3600 });
-		expect(mockKV.put).toHaveBeenCalledWith('WBGT_TODAY_18', '29', { expirationTtl: 3600 });
-	});
-
-	it('should not save WBGT data to KV if value is the same', async () => {
-		const mockKV = {
-			put: vi.fn(),
-			get: vi.fn((key) => {
-				if (key === 'WBGT_TODAY_15') return Promise.resolve('30');
-				if (key === 'WBGT_TODAY_18') return Promise.resolve('29');
-				return Promise.resolve(null);
-			}),
-			delete: vi.fn(),
-			list: vi.fn(),
-		};
-		const entries = [
-			{ key: 'WBGT_TODAY_15', value: '30' },
-			{ key: 'WBGT_TODAY_18', value: '29' },
-		];
-
-		await saveWbgtDataToKV(entries, { WBGT_KV: mockKV as any });
-
-		expect(mockKV.put).not.toHaveBeenCalled(); // Should not call put
 	});
 });
 
@@ -168,7 +126,7 @@ describe('getWbgtDataFromKV', () => {
 		const data = await getWbgtDataFromKV(date, hour, { WBGT_KV: mockKV as any });
 
 		expect(data).toBe('25');
-		expect(mockKV.get).toHaveBeenCalledWith('WBGT_TODAY_15');
+		expect(mockKV.get).toHaveBeenCalledWith('WBGT_20250709_15');
 	});
 
 	it('should return null if data is not found in KV', async () => {
@@ -184,7 +142,7 @@ describe('getWbgtDataFromKV', () => {
 		const data = await getWbgtDataFromKV(date, hour, { WBGT_KV: mockKV as any });
 
 		expect(data).toBeNull();
-		expect(mockKV.get).toHaveBeenCalledWith('WBGT_TODAY_15');
+		expect(mockKV.get).toHaveBeenCalledWith('WBGT_20250709_15');
 	});
 
 	it('should retrieve WBGT data for tomorrow from KV', async () => {
@@ -200,6 +158,6 @@ describe('getWbgtDataFromKV', () => {
 		const data = await getWbgtDataFromKV(date, hour, { WBGT_KV: mockKV as any });
 
 		expect(data).toBe('28');
-		expect(mockKV.get).toHaveBeenCalledWith('WBGT_TOMORROW_18');
+		expect(mockKV.get).toHaveBeenCalledWith('WBGT_20250710_18');
 	});
 });
