@@ -1,4 +1,5 @@
 import { getUpcomingPractices, hasNakamozu, getNakamozu } from './practice';
+import { getWbgtDataFromKV } from './wbgt';
 import type { VEvent } from 'ts-ics';
 
 // 既存のsendDiscord関数（WBGT通知）
@@ -71,6 +72,38 @@ export async function sendDiscord(env: { DISCORD_WEBHOOK_URL: string; WBGT_KV_NA
 	}
 }
 
+// WBGT参考値を取得するヘルパー関数
+async function getCurrentWbgtForReference(env: { WBGT_KV_NAMESPACE: KVNamespace }): Promise<string> {
+	try {
+		// UTC時刻をJSTに変換（UTC+9）
+		const nowUTC = new Date();
+		const nowJST = new Date(nowUTC.getTime() + 9 * 60 * 60 * 1000);
+		
+		const todayJST = new Date(nowJST.getFullYear(), nowJST.getMonth(), nowJST.getDate());
+		
+		// 15時と18時のWBGT値を取得
+		const [wbgt15, wbgt18] = await Promise.all([
+			getWbgtDataFromKV(todayJST, 15, { WBGT_KV: env.WBGT_KV_NAMESPACE }),
+			getWbgtDataFromKV(todayJST, 18, { WBGT_KV: env.WBGT_KV_NAMESPACE })
+		]);
+		
+		const value15 = wbgt15 ? parseFloat(wbgt15) : null;
+		const value18 = wbgt18 ? parseFloat(wbgt18) : null;
+		
+		if (value15 !== null || value18 !== null) {
+			const parts = [];
+			if (value15 !== null) parts.push(`15時: ${value15}°C`);
+			if (value18 !== null) parts.push(`18時: ${value18}°C`);
+			return `\n**WBGT参考値**: ${parts.join(', ')}`;
+		}
+		
+		return '';
+	} catch (error) {
+		console.error('WBGT取得エラー:', error);
+		return '';
+	}
+}
+
 // 新しい中百舌鳥稽古通知関数
 export async function sendPracticeNotification(env: any): Promise<boolean> {
 	try {
@@ -81,6 +114,9 @@ export async function sendPracticeNotification(env: any): Promise<boolean> {
 
 		const nakamozuPractices = getNakamozu(practices);
 		console.log(`中百舌鳥稽古が${nakamozuPractices.length}件見つかりました`);
+
+		// WBGT参考値を取得
+		const wbgtReference = await getCurrentWbgtForReference(env);
 
 		for (const event of nakamozuPractices) {
 			const startTime = new Date(event.start.date);
@@ -107,7 +143,7 @@ export async function sendPracticeNotification(env: any): Promise<boolean> {
 						title: event.summary || '稽古',
 						description: `**開始時間**: ${timeText}\n**場所**: ${event.location || '中百舌鳥'}${
 							event.description ? `\n**詳細**: ${event.description}` : ''
-						}`,
+						}${wbgtReference}`,
 						color: 3447003, // 青色
 						timestamp: new Date().toISOString(),
 					},
@@ -126,6 +162,7 @@ export async function sendPracticeNotification(env: any): Promise<boolean> {
 				console.log(`稽古通知送信成功: ${response.status}`);
 			} else {
 				console.error(`稽古通知送信失敗: ${response.status} - ${response.statusText}`);
+				return false; // HTTP エラーの場合は false を返す
 			}
 		}
 		return true; // 通知が成功した
