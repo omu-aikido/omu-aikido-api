@@ -127,8 +127,13 @@ describe('sendPracticeNotification', () => {
 			description: '詳細',
 		};
 		
-		// WBGT値をモック
-		mockEnv.WBGT_KV_NAMESPACE.get.mockResolvedValueOnce('25.5').mockResolvedValueOnce('27.2');
+		// WBGT値をモック (sendDiscord用に2回、getCurrentWbgtForReference用に2回)
+		// 18時の値を28以上にしてWBGT通知が送信されるようにする
+		mockEnv.WBGT_KV_NAMESPACE.get
+			.mockResolvedValueOnce('25.5')
+			.mockResolvedValueOnce('28.5')
+			.mockResolvedValueOnce('25.5')
+			.mockResolvedValueOnce('28.5');
 		
 		(getUpcomingPractices as Mock).mockResolvedValue([event]);
 		(hasNakamozu as Mock).mockReturnValue(true);
@@ -138,12 +143,14 @@ describe('sendPracticeNotification', () => {
 		const result = await sendPracticeNotification(mockEnv);
 
 		expect(result).toBe(true);
-		// Discord通知にWBGT参考値が含まれることを確認
-		const [, options] = fetchSpy.mock.calls[0];
-		const body = JSON.parse(options.body);
-		expect(body.embeds[0].description).toContain('WBGT参考値');
-		expect(body.embeds[0].description).toContain('15時: 25.5°C');
-		expect(body.embeds[0].description).toContain('18時: 27.2°C');
+		// 2回のDiscord通知が送信されることを確認（1回目はWBGT通知、2回目は稽古通知）
+		expect(fetchSpy).toHaveBeenCalledTimes(2);
+		// 稽古通知（2回目の呼び出し）にWBGT参考値が含まれることを確認
+		const [, practiceOptions] = fetchSpy.mock.calls[1];
+		const practiceBody = JSON.parse(practiceOptions.body);
+		expect(practiceBody.embeds[0].description).toContain('WBGT参考値');
+		expect(practiceBody.embeds[0].description).toContain('15時: 25.5°C');
+		expect(practiceBody.embeds[0].description).toContain('18時: 28.5°C');
 	});
 
 	it('稽古通知送信失敗時にエラーを出力', async () => {

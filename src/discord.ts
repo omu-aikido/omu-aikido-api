@@ -115,6 +115,9 @@ export async function sendPracticeNotification(env: any): Promise<boolean> {
 		const nakamozuPractices = getNakamozu(practices);
 		console.log(`中百舌鳥稽古が${nakamozuPractices.length}件見つかりました`);
 
+		// イベントが見つかった場合、WBGT通知も送信
+		await sendDiscord(env);
+
 		// WBGT参考値を取得
 		const wbgtReference = await getCurrentWbgtForReference(env);
 
