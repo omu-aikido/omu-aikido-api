@@ -115,7 +115,14 @@ describe('Practice Notification', () => {
 	});
 
 	describe('sendPracticeNotification', () => {
-		const mockEnv = { DISCORD_WEBHOOK_URL: 'http://mock-webhook.com' };
+		const mockEnv = { 
+			DISCORD_WEBHOOK_URL: 'http://mock-webhook.com',
+			WBGT_KV_NAMESPACE: {
+				get: vi.fn(),
+				put: vi.fn(),
+				delete: vi.fn(),
+			},
+		};
 
 		it('中百舌鳥稽古がある場合、Discord通知を送信すること', async () => {
 			fetchSpy

@@ -72,12 +72,18 @@ describe('sendDiscord', () => {
 describe('sendPracticeNotification', () => {
 	const mockEnv = {
 		DISCORD_WEBHOOK_URL: 'http://mock-webhook.com',
+		WBGT_KV_NAMESPACE: {
+			get: vi.fn(),
+			put: vi.fn(),
+			delete: vi.fn(),
+		},
 	};
 	let fetchSpy: Mock;
 
 	beforeEach(() => {
 		fetchSpy = vi.spyOn(global, 'fetch') as Mock;
 		fetchSpy.mockReset();
+		mockEnv.WBGT_KV_NAMESPACE.get.mockReset();
 		vi.clearAllMocks();
 	});
 
@@ -110,6 +116,41 @@ describe('sendPracticeNotification', () => {
 		expect(result).toBe(true); // 通知が成功したことを明確に示す
 		// Discord WebhookのURLが呼び出されたことを確認
 		expect(fetchSpy).toHaveBeenCalledWith(mockEnv.DISCORD_WEBHOOK_URL, expect.objectContaining({ method: 'POST' }));
+	});
+
+	it('WBGT参考値が利用可能な場合、通知に含める', async () => {
+		const event = {
+			start: { date: new Date().toISOString() },
+			end: { date: new Date(Date.now() + 3600000).toISOString() },
+			summary: '中百舌鳥',
+			location: '中百舌鳥',
+			description: '詳細',
+		};
+		
+		// WBGT値をモック (sendDiscord用に2回、getCurrentWbgtForReference用に2回)
+		// 18時の値を28以上にしてWBGT通知が送信されるようにする
+		mockEnv.WBGT_KV_NAMESPACE.get
+			.mockResolvedValueOnce('25.5')
+			.mockResolvedValueOnce('28.5')
+			.mockResolvedValueOnce('25.5')
+			.mockResolvedValueOnce('28.5');
+		
+		(getUpcomingPractices as Mock).mockResolvedValue([event]);
+		(hasNakamozu as Mock).mockReturnValue(true);
+		(getNakamozu as Mock).mockReturnValue([event]);
+		fetchSpy.mockResolvedValue(new Response(null, { status: 200 }));
+
+		const result = await sendPracticeNotification(mockEnv);
+
+		expect(result).toBe(true);
+		// 2回のDiscord通知が送信されることを確認（1回目はWBGT通知、2回目は稽古通知）
+		expect(fetchSpy).toHaveBeenCalledTimes(2);
+		// 稽古通知（2回目の呼び出し）にWBGT参考値が含まれることを確認
+		const [, practiceOptions] = fetchSpy.mock.calls[1];
+		const practiceBody = JSON.parse(practiceOptions.body);
+		expect(practiceBody.embeds[0].description).toContain('WBGT参考値');
+		expect(practiceBody.embeds[0].description).toContain('15時: 25.5°C');
+		expect(practiceBody.embeds[0].description).toContain('18時: 28.5°C');
 	});
 
 	it('稽古通知送信失敗時にエラーを出力', async () => {
