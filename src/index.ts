@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { getOmuaikidoNews, getAppNews } from './news';
-import { getCalendarEvents } from './calendar';
+import { getCalendarEvents, getJsonCalendarEvents } from './calendar';
 import { wbgt } from './wbgt';
 import { sendDiscord, sendPracticeNotification } from './discord';
 
@@ -21,6 +21,10 @@ app.get('/app/news', async (c) => {
 
 app.get('/calendar', async (c) => {
 	return getCalendarEvents(c.req.raw);
+});
+
+app.get('/calendar/json', async (c) => {
+	return getJsonCalendarEvents(c.req.raw);
 });
 
 app.get('/wbgt', async (c) => {
