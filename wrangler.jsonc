@@ -11,8 +11,5 @@
 			"binding": "WBGT_KV_NAMESPACE",
 			"id": "c44228d26f204836873219eeecb79ab2"
 		}
-	],
-	"triggers": {
-		"crons": ["0 */2 * * *"]
-	}
+	]
 }
