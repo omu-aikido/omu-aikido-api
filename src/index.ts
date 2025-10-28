@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { cache } from "hono/cache";
 import { getNews } from "./news";
 import calendar from "./calendar";
@@ -6,16 +7,19 @@ import calendar from "./calendar";
 
 const app = new Hono();
 
-app.route("/calendar", calendar);
-
-app.get(
-  "/news",
-  async (c) => {
-    const news = await getNews();
-    return c.json(news);
-  },
+app.use(
+  "*",
+  cors({
+    origin: [
+      "https://omu-aikido.com",
+      "https://preview.omu-aikido-page.pages.dev",
+    ],
+    maxAge: 600,
+    allowMethods: ["GET"],
+  }),
   cache({
-    cacheName: "newslatter-cache",
+    // Fixed typo: "newslatter-cache" -> "newsletter-cache"
+    cacheName: "omu-aikido-api-cache",
     cacheControl: "max-age=3600",
     cacheableStatusCodes: [200, 404, 412],
   }),
