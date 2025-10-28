@@ -11,7 +11,7 @@
  * - Uses `env.WBGT_KV_NAMESPACE` (KVNamespace) for storage and expects `c.env` to provide it.
  */
 
-import { Context } from "hono";
+import type { Context } from "hono";
 
 interface WbgtEntry {
   key: string;
@@ -215,11 +215,9 @@ async function readKvForTargets(
     try {
       // Prefer getWithMetadata to inspect expiration (Cloudflare Worker KV includes metadata)
       // But fall back to simple get if unavailable.
-      // @ts-ignore - allow optional getWithMetadata
       if (typeof env.WBGT_KV_NAMESPACE.getWithMetadata === "function") {
         // We expect getWithMetadata to return { value, metadata }
         // Use text type for value
-        // @ts-ignore
         const result = await env.WBGT_KV_NAMESPACE.getWithMetadata(key, {
           type: "text",
         });

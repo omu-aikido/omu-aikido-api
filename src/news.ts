@@ -11,7 +11,20 @@ export async function getNews() {
 
   const sheet = parseSheet(jsonData);
 
-  const filtered = sheet.filter((row) => {
+  // Sort by タイムスタンプ first to ensure consistent ID assignment
+  const sorted = sheet.sort((a, b) => {
+    const dateA = a.タイムスタンプ ? new Date(a.タイムスタンプ).getTime() : 0;
+    const dateB = b.タイムスタンプ ? new Date(b.タイムスタンプ).getTime() : 0;
+    return dateA - dateB;
+  });
+
+  // Assign stable IDs based on original order
+  const withIds = sorted.map((row, index) => ({
+    ...row,
+    stableId: index,
+  }));
+
+  const filtered = withIds.filter((row: any) => {
     let start: Date | null = null;
     let end: Date | null = null;
     if (row.start) start = new Date(row.start);
@@ -19,8 +32,8 @@ export async function getNews() {
     return (start && start < today) || (end && end > today);
   });
 
-  return filtered.map((row) => ({
-    id: crypto.randomUUID(),
+  return filtered.map((row: any) => ({
+    id: row.stableId,
     title: row.title,
     content: row.content,
     date: row.タイムスタンプ,
