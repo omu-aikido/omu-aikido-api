@@ -18,9 +18,8 @@ app.use(
     allowMethods: ["GET"],
   }),
   cache({
-    // Fixed typo: "newslatter-cache" -> "newsletter-cache"
     cacheName: "omu-aikido-api-cache",
-    cacheControl: "max-age=3600",
+    cacheControl: "max-age=0",
     cacheableStatusCodes: [200, 404, 412],
   }),
 );
