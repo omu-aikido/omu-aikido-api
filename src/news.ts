@@ -18,9 +18,12 @@ export async function getNews() {
     if (row.end) end = new Date(row.end);
     return (start && start < today) || (end && end > today);
   });
+
   return filtered.map((row) => ({
+    id: crypto.randomUUID(),
     title: row.title,
     content: row.content,
+    date: row.タイムスタンプ,
   }));
 }
 
