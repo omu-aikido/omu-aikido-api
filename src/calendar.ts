@@ -1,115 +1,112 @@
-import { icsCalendarToObject, parseIcsCalendar, generateIcsCalendar, type VEvent, type VCalendar } from 'ts-ics';
+import { Hono } from "hono";
+import { convertIcsCalendar, generateIcsCalendar, IcsCalendar } from "ts-ics";
 
-///  The `GET` method is used to retrieve information from the given server using a given URI. Requests using GET should only retrieve data.
-/// - Parameter request: @type {Request}
-/// - Returns: @type {Response}
-export async function getCalendarEvents(request: Request) {
-	const baseURL = 'https://calendar.google.com/calendar/ical/';
-	const deafult = 'new.ocuaikido%40gmail.com/public/basic.ics';
+const app = new Hono();
 
-	const params = new URLSearchParams(request.url);
-	const target = params.get('calendar');
+app.get("/ics", async (c) => {
+  try {
+    const ics = await getIcs();
+    return c.text(ics, 200, { "Content-Type": "text/calendar" });
+  } catch {
+    return c.text("Internal Server Error", 500);
+  }
+});
 
-	const targetUrl = target ? `${baseURL}${target}` : `${baseURL}${deafult}`;
+app.get("/json", async (c) => {
+  let calendar: {
+    id: string;
+    title: string;
+    start: Date;
+    end: Date;
+    location: string | undefined;
+    description: string | undefined;
+  }[];
+  try {
+    calendar = await getJson();
+  } catch {
+    return c.text("Internal Server Error", 500);
+  }
+  return c.json(calendar);
+});
 
-	try {
-		const response = await fetch(targetUrl);
-		if (!response.ok) {
-			return new Response(`Failed to fetch target URL: ${response.statusText}`, { status: response.status });
-		}
+export default app;
 
-		const res = await response.text();
-		const parsedData = icsCalendarToObject(res);
-		const events: VEvent[] | undefined = parsedData.events;
-		if (!events) {
-			return new Response('No events found in the ICS data', {
-				status: 404,
-			});
-		}
-		const filteredEvents = events.filter((event) => {
-			const startDate = new Date(new Date().setHours(0, 0, 0, 0));
-			const endDate = new Date(new Date().setMonth(new Date().getMonth() + 2));
-			return (
-				new Date(event.start.date) >= startDate && (event.end ? new Date(event.end.date) <= endDate : new Date(event.start.date) <= endDate)
-			);
-		});
-		const vCalendar: VCalendar = {
-			version: '2.0',
-			prodId: parsedData.prodId,
-			method: parsedData.method,
-			timezones: parsedData.timezones,
-			events: filteredEvents,
-		};
-		const data = generateIcsCalendar(vCalendar);
-		return new Response(data, {
-			status: 200,
-			headers: {
-				'Cache-Control': 'max-age=0, s-maxage=14400, stale-while-revalidate=3600',
-				'Access-Control-Allow-Origin': 'https://omu-aikido.com',
-			},
-		});
-	} catch (error) {
-		if (error instanceof Error) {
-			return new Response(`Error: ${error.message}`, { status: 500 });
-		} else {
-			return new Response(`An unknown error occurred`, { status: 500 });
-		}
-	}
+async function getIcs() {
+  const baseURL = "https://calendar.google.com/calendar/ical/";
+  const deafult = "new.ocuaikido%40gmail.com/public/basic.ics";
+
+  const targetUrl = `${baseURL}${deafult}`;
+
+  const response = await fetch(targetUrl);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch target URL: ${response.statusText}`);
+  }
+
+  const res = await response.text();
+  const parsedData = convertIcsCalendar(undefined, res);
+  const events = parsedData.events;
+  if (!events) {
+    throw new Error("No events found in the ICS data");
+  }
+  const filteredEvents = events.filter((event) => {
+    const startDate = new Date(new Date().setMonth(new Date().getMonth() - 2));
+    const endDate = new Date(new Date().setMonth(new Date().getMonth() + 3));
+    return (
+      new Date(event.start.date) >= startDate &&
+      (event.end
+        ? new Date(event.end.date) <= endDate
+        : new Date(event.start.date) <= endDate)
+    );
+  });
+  const icsCalendar: IcsCalendar = {
+    version: "2.0",
+    prodId: parsedData.prodId,
+    method: parsedData.method,
+    timezones: parsedData.timezones,
+    events: filteredEvents,
+  };
+
+  return generateIcsCalendar(icsCalendar);
 }
 
-export async function getJsonCalendarEvents(request: Request) {
-	const baseURL = 'https://calendar.google.com/calendar/ical/';
-	const deafult = 'new.ocuaikido%40gmail.com/public/basic.ics';
+async function getJson() {
+  const baseURL = "https://calendar.google.com/calendar/ical/";
+  const deafult = "new.ocuaikido%40gmail.com/public/basic.ics";
 
-	const params = new URLSearchParams(request.url);
-	const target = params.get('calendar');
+  const targetUrl = `${baseURL}${deafult}`;
 
-	const targetUrl = target ? `${baseURL}${target}` : `${baseURL}${deafult}`;
+  const response = await fetch(targetUrl);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch target URL: ${response.statusText}`);
+  }
 
-	try {
-		const response = await fetch(targetUrl);
-		if (!response.ok) {
-			return new Response(`Failed to fetch target URL: ${response.statusText}`, { status: response.status });
-		}
+  const res = await response.text();
+  const parsedData = convertIcsCalendar(undefined, res);
+  const events = parsedData.events;
+  if (!events) {
+    throw new Error("No events found in the ICS data");
+  }
+  const filteredEvents = events.filter((event) => {
+    const startDate = new Date(new Date().setHours(0, 0, 0, 0));
+    const endDate = new Date(new Date().setMonth(new Date().getMonth() + 3));
+    return (
+      new Date(event.start.date) >= startDate &&
+      (event.end
+        ? new Date(event.end.date) <= endDate
+        : new Date(event.start.date) <= endDate)
+    );
+  });
 
-		const res = await response.text();
-		const parsedData = icsCalendarToObject(res);
-		const events: VEvent[] | undefined = parsedData.events;
-		if (!events) {
-			return new Response('No events found in the ICS data', {
-				status: 404,
-			});
-		}
-		const filteredEvents = events.filter((event) => {
-			const startDate = new Date(new Date().setHours(0, 0, 0, 0));
-			const endDate = new Date(new Date().setMonth(new Date().getMonth() + 2));
-			return (
-				new Date(event.start.date) >= startDate && (event.end ? new Date(event.end.date) <= endDate : new Date(event.start.date) <= endDate)
-			);
-		});
+  const json = filteredEvents
+    .map((event) => ({
+      id: event.uid,
+      title: event.summary,
+      start: event.start.date,
+      end: event.end ? event.end.date : event.start.date,
+      location: event.location,
+      description: event.description,
+    }))
+    .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
 
-		const json = filteredEvents.map((event) => ({
-			id: event.uid,
-			title: event.summary,
-			start: event.start.date,
-			end: event.end ? event.end.date : event.start.date,
-			location: event.location,
-			description: event.description,
-		})).sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
-
-		return new Response(JSON.stringify(json), {
-			status: 200,
-			headers: {
-				'Cache-Control': 'max-age=0, s-maxage=14400, stale-while-revalidate=3600',
-				'Access-Control-Allow-Origin': 'https://omu-aikido.com',
-				'Content-Type': 'application/json',
-			},
-		});
-	} catch (error) {
-		if (error instanceof Error) {
-			return new Response(`Error: ${error.message}`, { status: 500 });
-		} else {
-			return new Response(`An unknown error occurred`, { status: 500 });
-		}
-	}
+  return json;
 }

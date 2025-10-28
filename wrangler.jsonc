@@ -1,15 +1,15 @@
 {
-	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "api",
-	"main": "src/index.ts",
-	"compatibility_date": "2025-02-04",
-	"observability": {
-		"enabled": true
-	},
-	"kv_namespaces": [
-		{
-			"binding": "WBGT_KV_NAMESPACE",
-			"id": "c44228d26f204836873219eeecb79ab2"
-		}
-	]
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "api",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-10-27",
+  "observability": {
+    "enabled": true
+  },
+  "kv_namespaces": [
+    {
+      "binding": "WBGT_KV_NAMESPACE",
+      "id": "c44228d26f204836873219eeecb79ab2"
+    }
+  ]
 }

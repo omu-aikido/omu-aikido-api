@@ -1,77 +1,83 @@
-import { fetchSheet, sheetToJSON } from '@/src/lib/functions';
+export async function getNews() {
+  const id = "1sAIL3UdWFxWUXMvGFGrmV8WWKfr0fzaO09TzTSibPL4";
+  const gid = "1160124920";
 
-// URL Parameter
-// - `start`: string || null : 掲載開始日
-// - `end`: string || null : 掲載終了日
-// - `long`: boolean || null : False OR Nullでは内容を省略
-export async function getOmuaikidoNews(request: Request) {
-	// 名前変更: getNews => getOmuaikidoNews
-	const id = '1srvGrA-KbgQfid-GbhAJKeS2fc3_eAdm_lRB8POe5z4';
-	const gid = '233082604';
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-	const today = new Date();
-	today.setHours(0, 0, 0, 0);
+  const jsonData = await fetchSheet(id, gid).then(sheetToJson);
+  if (jsonData.status !== "ok") throw new Error("Failed to fetch newsletters");
+  if (jsonData.table.rows.length === 0) throw new Error("No newsletters found");
 
-	const isLong = new URL(request.url).searchParams.get('long') === 'true';
+  const sheet = parseSheet(jsonData);
 
-	const newsletters = await fetchSheet(id, gid).then(sheetToJSON);
-	const filteredNewsletters = newsletters.filter((entry: any) => {
-		// ターゲットの確認
-		const targetMatch = entry.target === 'omu-aikido.com';
-		// 開始日の確認（今日以前に公開されたもの）
-		const isPublished = entry.startDate <= today;
-
-		if (isLong) {
-			// longモード: 公開済みの全てのコンテンツ
-			return targetMatch && isPublished;
-		} else {
-			// 通常モード: 公開済みで、まだ公開期間が終了していないもの
-			const isActive = entry.endDate >= today;
-			return targetMatch && isPublished && isActive;
-		}
-	});
-
-	return new Response(JSON.stringify(filteredNewsletters), {
-		headers: {
-			'Cache-Control': 'max-age=0, s-maxage=7200, stale-while-revalidate=3600',
-			'content-type': 'application/json',
-			'Access-Control-Allow-Origin': 'https://omu-aikido.com',
-		},
-	});
+  const filtered = sheet.filter((row) => {
+    let start: Date | null = null;
+    let end: Date | null = null;
+    if (row.start) start = new Date(row.start);
+    if (row.end) end = new Date(row.end);
+    return (start && start < today) || (end && end > today);
+  });
+  return filtered.map((row) => ({
+    title: row.title,
+    content: row.content,
+  }));
 }
 
-export async function getAppNews(request: Request) {
-	// 名前変更: getNews => getOmuaikidoNews
-	const id = '1srvGrA-KbgQfid-GbhAJKeS2fc3_eAdm_lRB8POe5z4';
-	const gid = '233082604';
+const fetchSheet = async (id: string, gid: string) => {
+  const txt = await fetch(
+    `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json&tq&gid=${gid}`,
+  );
+  return await txt.text();
+};
 
-	const today = new Date();
-	today.setHours(0, 0, 0, 0);
+const sheetToJson = async (txt: string) => {
+  // Remove any leading non-JSON characters and the google.visualization Query prefix
+  const prefix = "google.visualization.Query.setResponse(";
+  const prefixIndex = txt.indexOf(prefix);
+  if (prefixIndex !== -1) {
+    txt = txt.slice(prefixIndex + prefix.length);
+    // Remove trailing characters like ');'
+    if (txt.endsWith(");")) {
+      txt = txt.slice(0, -2);
+    }
+    txt = txt.trim();
+  }
+  const parsed = JSON.parse(txt) as GoogleSpreadSheetJSON;
+  return parsed;
+};
 
-	const isLong = new URL(request.url).searchParams.get('long') === 'true';
+const parseSheet = (sheet: GoogleSpreadSheetJSON) => {
+  const rows = sheet.table.rows;
+  const columns = sheet.table.cols.map((col) => col.label);
+  const data = rows.map((row) => {
+    const values = row.c.map((cell) => {
+      if (cell === null) return null;
+      if (cell.f) return cell.f;
+      return cell.v;
+    });
+    return Object.fromEntries(
+      columns.map((key, index) => [key, values[index]]),
+    );
+  });
+  return data;
+};
 
-	const newsletters = await fetchSheet(id, gid).then(sheetToJSON);
-	const filteredNewsletters = newsletters.filter((entry: any) => {
-		// ターゲットの確認
-		const targetMatch = entry.target === 'app.omu-aikido.com';
-		// 開始日の確認（今日以前に公開されたもの）
-		const isPublished = entry.startDate <= today;
-
-		if (isLong) {
-			// longモード: 公開済みの全てのコンテンツ
-			return targetMatch && isPublished;
-		} else {
-			// 通常モード: 公開済みで、まだ公開期間が終了していないもの
-			const isActive = entry.endDate >= today;
-			return targetMatch && isPublished && isActive;
-		}
-	});
-
-	return new Response(JSON.stringify(filteredNewsletters), {
-		headers: {
-			'Cache-Control': 'max-age=0, s-maxage=7200, stale-while-revalidate=3600',
-			'content-type': 'application/json',
-			'Access-Control-Allow-Origin': 'https://app.omu-aikido.com',
-		},
-	});
-}
+type GoogleSpreadSheetJSON = {
+  version: string;
+  reqId: string;
+  status: string;
+  sig: string;
+  table: {
+    cols: {
+      id: string;
+      label: string;
+      type: string;
+      pattern?: string;
+    }[];
+    rows: {
+      c: null[] | { f?: string; v: string }[];
+    }[];
+    parsedNumHeaders: number;
+  };
+};

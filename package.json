@@ -1,25 +1,21 @@
 {
-	"name": "api",
-	"version": "0.0.0",
-	"private": true,
-	"scripts": {
-		"deploy": "wrangler deploy",
-		"dev": "wrangler dev",
-		"start": "wrangler dev",
-		"test": "vitest",
-		"cf-typegen": "wrangler types"
-	},
-	"devDependencies": {
-		"@cloudflare/vitest-pool-workers": "^0.6.4",
-		"@cloudflare/workers-types": "^4.20250204.0",
-		"@types/node": "^22.13.4",
-		"typescript": "^5.5.2",
-		"vitest": "~2.1.9",
-		"wrangler": "^3.109.0"
-	},
-	"dependencies": {
-		"hono": "^4.5.0",
-		"ts-ics": "^1.6.7",
-		"zod": "^3.24.2"
-	}
+  "name": "api",
+  "type": "module",
+  "scripts": {
+    "dev": "hono serve --use 'logger()' src/index.ts",
+    "deploy": "wrangler deploy --minify",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
+    "hono": "hono",
+    "format": "pnpm exec biome format --write .",
+    "lint": "pnpm exec biome lint --write .",
+    "check": "pnpm exec biome check --write ."
+  },
+  "dependencies": {
+    "hono": "^4.10.3",
+    "ts-ics": "^2.4.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.3.1",
+    "wrangler": "^4.4.0"
+  }
 }
