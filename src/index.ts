@@ -13,13 +13,15 @@ app.use(
     origin: [
       "https://omu-aikido.com",
       "https://preview.omu-aikido-page.pages.dev",
+      "http://localhost:4321",
+      "http://localhost:8788",
     ],
     maxAge: 600,
     allowMethods: ["GET"],
   }),
   cache({
     cacheName: "omu-aikido-api-cache",
-    cacheControl: "max-age=0",
+    cacheControl: "max-age=600, s-maxage=1200, private, must-revalidate",
     cacheableStatusCodes: [200, 404, 412],
   }),
 );
