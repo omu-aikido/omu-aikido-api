@@ -31,17 +31,11 @@ interface WbgtEnv {
  *
  * Returns an array of objects { date: Date, hour: number } where date is a local (JST) date with time zeroed.
  */
-function computeTargetTimeWindows(
-  nowUtc = new Date(),
-): { date: Date; hour: number }[] {
+function computeTargetTimeWindows(nowUtc = new Date()): { date: Date; hour: number }[] {
   // Convert current UTC to JST by adding 9 hours
   const nowJst = new Date(nowUtc.getTime() + 9 * 60 * 60 * 1000);
 
-  const todayJst = new Date(
-    nowJst.getFullYear(),
-    nowJst.getMonth(),
-    nowJst.getDate(),
-  );
+  const todayJst = new Date(nowJst.getFullYear(), nowJst.getMonth(), nowJst.getDate());
   const tomorrowJst = new Date(todayJst.getTime() + 24 * 60 * 60 * 1000);
 
   return [
@@ -83,9 +77,7 @@ async function fetchWbgtCsv(point: string): Promise<string> {
   const res = await fetch(url);
   if (!res.ok) {
     const body = await res.text().catch(() => "<unreadable body>");
-    throw new Error(
-      `Failed to fetch WBGT CSV (${res.status} ${res.statusText}): ${body}`,
-    );
+    throw new Error(`Failed to fetch WBGT CSV (${res.status} ${res.statusText}): ${body}`);
   }
   return await res.text();
 }
@@ -171,10 +163,7 @@ async function fetchWbgtData(params: string | null): Promise<WbgtEntry[]> {
  * Save entries to KV if they differ from existing values.
  * Uses TTL of 86400 seconds (1 day) consistent with original behavior.
  */
-async function saveWbgtDataToKV(
-  entries: WbgtEntry[],
-  env: WbgtEnv,
-): Promise<void> {
+async function saveWbgtDataToKV(entries: WbgtEntry[], env: WbgtEnv): Promise<void> {
   const ttlSeconds = 86400; // 1 day
   for (const entry of entries) {
     try {
@@ -280,9 +269,7 @@ export async function wbgt(c: Context): Promise<Record<string, string | null>> {
         await saveWbgtDataToKV(entries, env);
       } else {
         // If fetch succeeded but no entries were found, log (but do not fail)
-        console.warn(
-          "WBGT fetch returned no entries for targets; KV not updated.",
-        );
+        console.warn("WBGT fetch returned no entries for targets; KV not updated.");
       }
     } catch (err) {
       // If fetching/parsing fails, log error and proceed to return whatever KV data we have.

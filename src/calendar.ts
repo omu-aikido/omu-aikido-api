@@ -42,9 +42,7 @@ async function fetchIcsText(url: string): Promise<string> {
   if (!res.ok) {
     // Include status information to aid debugging and monitoring.
     const body = await res.text().catch(() => "<unreadable body>");
-    throw new Error(
-      `Failed to fetch ICS (${res.status} ${res.statusText}): ${body}`,
-    );
+    throw new Error(`Failed to fetch ICS (${res.status} ${res.statusText}): ${body}`);
   }
   return await res.text();
 }
@@ -109,19 +107,14 @@ function eventsToJson(events: RawIcsEvent[]) {
       };
     })
     .filter((e) => e.start !== null)
-    .sort(
-      (a, b) => new Date(a.start!).getTime() - new Date(b.start!).getTime(),
-    );
+    .sort((a, b) => new Date(a.start!).getTime() - new Date(b.start!).getTime());
 }
 
 /**
  * Build an ICS calendar document containing only the provided events.
  * We re-use the parsed calendar's metadata where possible.
  */
-function buildIcsCalendarFromParsed(
-  parsed: ParsedCalendar,
-  events: RawIcsEvent[],
-) {
+function buildIcsCalendarFromParsed(parsed: ParsedCalendar, events: RawIcsEvent[]) {
   const icsCalendar: any = {
     version: "2.0",
     prodId: parsed.prodId,

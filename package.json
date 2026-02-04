@@ -6,16 +6,15 @@
     "deploy": "wrangler deploy --minify",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
     "hono": "hono",
-    "format": "pnpm exec biome format --write .",
-    "lint": "pnpm exec biome lint --write .",
-    "check": "pnpm exec biome check --write ."
+    "format": "bun x oxfmt .",
+    "lint": "bun x oxlint --fix .",
+    "check": "bun x tsc check --write ."
   },
   "dependencies": {
     "hono": "^4.10.3",
     "ts-ics": "^2.4.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.3.1",
     "wrangler": "^4.4.0"
   }
 }

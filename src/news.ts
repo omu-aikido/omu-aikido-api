@@ -72,9 +72,7 @@ const parseSheet = (sheet: GoogleSpreadSheetJSON) => {
       if (cell.f) return cell.f;
       return cell.v;
     });
-    return Object.fromEntries(
-      columns.map((key, index) => [key, values[index]]),
-    );
+    return Object.fromEntries(columns.map((key, index) => [key, values[index]]));
   });
   return data;
 };
