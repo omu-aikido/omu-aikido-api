@@ -5,11 +5,11 @@
     "": {
       "name": "api",
       "dependencies": {
-        "hono": "^4.10.3",
+        "hono": "^4.11.7",
         "ts-ics": "^2.4.0",
       },
       "devDependencies": {
-        "wrangler": "^4.4.0",
+        "wrangler": "^4.62.0",
       },
     },
   },
