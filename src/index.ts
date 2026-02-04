@@ -3,7 +3,6 @@ import { cors } from "hono/cors";
 import { cache } from "hono/cache";
 import { getNews } from "./news";
 import calendar from "./calendar";
-// import { wbgt } from "./wbgt";
 
 const app = new Hono();
 
@@ -39,17 +38,6 @@ app.get("/news", async (c) => {
     return c.json({ error: "Failed to fetch news" }, 500);
   }
 });
-
-// // WBGT endpoint
-// app.get("/wbgt", async (c) => {
-//   try {
-//     const kvData = await wbgt(c);
-//     return c.json(kvData);
-//   } catch (err) {
-//     console.error("Error fetching WBGT data:", err);
-//     return c.json({ error: "Failed to fetch WBGT data" }, 500);
-//   }
-// });
 
 // Fallback for unknown routes
 app.get("*", (c) => c.notFound());
