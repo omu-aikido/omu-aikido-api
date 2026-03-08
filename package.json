@@ -11,10 +11,10 @@
     "check": "bun x tsc check --write ."
   },
   "dependencies": {
-    "hono": "^4.11.7",
-    "ts-ics": "^2.4.0"
+    "hono": "4.12.5",
+    "ts-ics": "2.4.1"
   },
   "devDependencies": {
-    "wrangler": "^4.62.0"
+    "wrangler": "4.71.0"
   }
 }

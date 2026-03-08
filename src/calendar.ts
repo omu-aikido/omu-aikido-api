@@ -144,11 +144,11 @@ function computeWindowForIcs() {
 }
 
 function computeWindowForJson() {
-  // JSON previously used: start = today 00:00:00; end = now + 3 months
+  // JSON now uses: start = first day of current month 00:00:00; end = last day of current month 23:59:59
   const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const end = new Date(now);
-  end.setMonth(end.getMonth() + 3);
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  start.setHours(0, 0, 0, 0);
   end.setHours(23, 59, 59, 999);
   return { start, end };
 }
@@ -194,7 +194,27 @@ app.get("/json", async (c) => {
     const parsed = parseIcs(icsText);
     const events = parsed.events ?? [];
 
-    const { start, end } = computeWindowForJson();
+    // Parse query parameters for custom date range
+    const startParam = c.req.query("start");
+    const endParam = c.req.query("end");
+
+    let start: Date;
+    let end: Date;
+
+    if (startParam && endParam) {
+      // Use query parameters if provided
+      start = new Date(startParam);
+      end = new Date(endParam);
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return c.json({ error: "Invalid date format in start or end parameter" }, 400);
+      }
+    } else {
+      // Default to this month
+      const window = computeWindowForJson();
+      start = window.start;
+      end = window.end;
+    }
+
     const filtered = filterEventsInWindow(events, start, end);
 
     const json = eventsToJson(filtered);
