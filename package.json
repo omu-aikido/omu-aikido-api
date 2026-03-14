@@ -11,7 +11,7 @@
     "check": "bun x tsc check --write ."
   },
   "dependencies": {
-    "hono": "4.12.5",
+    "hono": "4.12.7",
     "ts-ics": "2.4.1"
   },
   "devDependencies": {
