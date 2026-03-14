@@ -5,11 +5,11 @@
     "": {
       "name": "api",
       "dependencies": {
-        "hono": "^4.11.7",
-        "ts-ics": "^2.4.0",
+        "hono": "4.12.5",
+        "ts-ics": "2.4.3",
       },
       "devDependencies": {
-        "wrangler": "^4.62.0",
+        "wrangler": "4.71.0",
       },
     },
   },
@@ -180,7 +180,7 @@
 
     "supports-color": ["supports-color@10.2.2", "", {}, "sha512-SS+jx45GF1QjgEXQx4NJZV9ImqmO2NPz5FNsIHrsDjh2YsHnawpan7SNQ1o8NuhrbHZy9AZhIoCUiCeaW/C80g=="],
 
-    "ts-ics": ["ts-ics@2.4.1", "", { "dependencies": { "@standard-schema/spec": "^1.0.0" } }, "sha512-7iI90sLYPukVuoS4zOEixDCG34wMU0S4KK87Tq81rDencS99qdU2qhXFYGidoXBx5L6kPG6n8ku3EKFKgcWMDg=="],
+    "ts-ics": ["ts-ics@2.4.3", "", { "dependencies": { "@standard-schema/spec": "^1.0.0" } }, "sha512-fHGCXlt7J/pCaokWnmDr8GOh1BgmYMcNuGesJaSv7T0O1hJ4tYYysYn7i7yVJjyTqxDPJjSNFXmSkgxsZP7rQw=="],
 
     "tslib": ["tslib@2.8.1", "", {}, "sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w=="],
 
